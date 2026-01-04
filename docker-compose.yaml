@@ -1,0 +1,89 @@
+services:
+  zoo1:
+    image: zookeeper:3.9
+    restart: always
+    hostname: zoo1
+    volumes:
+      - ./runtime/zoo1/data:/data
+      - ./runtime/zoo1/datalog:/datalog
+      - ./config/logback.xml:/conf/logback.xml
+      #- ./config/zoo.cfg:/conf/zoo.cfg1
+    ports:
+      - 2181:2181
+    environment:
+      ZOO_MY_ID: 1
+      ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=zoo3:2888:3888;2181
+    networks:
+      - solr_network
+    healthcheck:
+      test: /bin/zkCli.sh localhost:2181 ls / &> /dev/null
+      start_period: 10s
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  zoo2:
+    image: zookeeper:3.9
+    restart: always
+    hostname: zoo2
+    volumes:
+      - ./runtime/zoo2/data:/data
+      - ./runtime/zoo2/datalog:/datalog
+      - ./config/logback.xml:/conf/logback.xml
+    ports:
+      - 2182:2181
+    environment:
+      ZOO_MY_ID: 2
+      ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=zoo3:2888:3888;2181
+    networks:
+      - solr_network
+    healthcheck:
+      test: /bin/zkCli.sh localhost:2181 ls / &> /dev/null
+      start_period: 10s
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  zoo3:
+    image: zookeeper:3.9
+    restart: always
+    hostname: zoo3
+    volumes:
+      - ./runtime/zoo3/data:/data
+      - ./runtime/zoo3/datalog:/datalog
+      - ./config/logback.xml:/conf/logback.xml
+    ports:
+      - 2183:2181
+    environment:
+      ZOO_MY_ID: 3
+      ZOO_SERVERS: server.1=zoo1:2888:3888;2181 server.2=zoo2:2888:3888;2181 server.3=zoo3:2888:3888;2181
+    networks:
+      - solr_network
+    healthcheck:
+      test: /bin/zkCli.sh localhost:2181 ls / &> /dev/null
+      start_period: 10s
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  client:
+    build: .
+    restart: on-failure
+    hostname: client
+    environment:
+      APP_CLIENT_ZOOKEEPER_CLUSTER: zoo1:2181,zoo2:2181,zoo3:2181
+      APP_CLIENT_ZOOKEEPER_connection.timeout: ls,/
+    networks:
+      - solr_network
+    depends_on:
+      zoo1:
+        condition: service_healthy
+      zoo2:
+        condition: service_healthy
+      zoo3:
+        condition: service_healthy
+
+networks:
+  solr_network:
+    driver: bridge
+
