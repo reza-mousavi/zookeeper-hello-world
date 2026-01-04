@@ -67,7 +67,7 @@ services:
       retries: 5
 
   client:
-    build: .
+    build: ./zookeeper_java_client
     restart: on-failure
     hostname: client
     environment:
